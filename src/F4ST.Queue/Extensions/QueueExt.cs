@@ -9,7 +9,12 @@ namespace F4ST.Queue.Extensions
 {
     public static class QueueExt
     {
-        public static QSettingModel GetSetting(this IAppSetting appSetting, string name,
+        public static IEnumerable<QSettingModel> GetQSettings(this IAppSetting appSetting, string section = "QueueSettings")
+        {
+            return appSetting.Get<List<QSettingModel>>(section);
+        }
+
+        public static QSettingModel GetQSetting(this IAppSetting appSetting, string name,
             string section = "QueueSettings")
         {
             return appSetting.Get<List<QSettingModel>>(section)
