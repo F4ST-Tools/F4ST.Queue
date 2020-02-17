@@ -6,13 +6,23 @@
     public enum QSettingType
     {
         /// <summary>
-        /// درخواست های وب
+        /// درخواست های وب سرویسی
         /// </summary>
-        Routing = 0,
+        WebService = 0,
 
         /// <summary>
         /// ارتباط با اینجن ها
         /// </summary>
-        RPC = 1
+        RPC = 1,
+
+        /// <summary>
+        /// درخواست های وب
+        /// </summary>
+        Web = 2,
+
+        /// <summary>
+        /// Resources, css, js, image
+        /// </summary>
+        Resource = 3
     }
 }
