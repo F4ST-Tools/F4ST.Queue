@@ -24,7 +24,8 @@ namespace Test.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var a = await _testClass.Test("test: ");
+            //var a = await _testClass.Test("test: ");
+            await _testClass.Test2(10);
             return View();
         }
 

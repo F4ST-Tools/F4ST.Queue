@@ -17,7 +17,7 @@ namespace Test.Controllers
             return a + new Random().Next(1000).ToString();
         }
 
-        public async Task Test2()
+        public async Task Test2(int a)
         {
         }
 

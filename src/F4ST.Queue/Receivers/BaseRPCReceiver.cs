@@ -1,13 +1,17 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using F4ST.Common.Containers;
+using F4ST.Common.Extensions;
 using F4ST.Common.Tools;
 using F4ST.Queue.QMessageModels;
 using F4ST.Queue.QMessageModels.RequestMessages;
 using F4ST.Queue.QMessageModels.SendMessages;
+using Newtonsoft.Json;
 
 namespace F4ST.Queue.Receivers
 {
@@ -37,21 +41,31 @@ namespace F4ST.Queue.Receivers
 
         protected override async Task<QClassResponseMessage> ProcessRequestMessage(QClassRequestMessage request)
         {
-            var wr = IoC.Resolve<TReceiver>();
-            var method = FindMethod(wr, request.MethodName);
-
-            if (!string.IsNullOrWhiteSpace(request.Lang))
+            try
             {
-                var cultureInfo = new CultureInfo(request.Lang);
-                CultureInfo.CurrentCulture = cultureInfo;
-                CultureInfo.CurrentUICulture = cultureInfo;
+                var wr = IoC.Resolve<TReceiver>();
+                var method = FindMethod(wr, request.MethodName);
+
+                if (!string.IsNullOrWhiteSpace(request.Lang))
+                {
+                    var cultureInfo = new CultureInfo(request.Lang);
+                    CultureInfo.CurrentCulture = cultureInfo;
+                    CultureInfo.CurrentUICulture = cultureInfo;
+                }
+
+                var parameters = ProcessParameters(method, request.Parameters);
+
+                var res = Globals.RunMethod(wr, method, parameters, true);
+                return new QClassResponseMessage()
+                {
+                    Result = JsonConvert.SerializeObject(res).ToBase64()
+                };
             }
-
-            var res = Globals.RunMethod(wr, method, request.Parameters, true);
-            return new QClassResponseMessage()
+            catch (Exception e)
             {
-                Result = res
-            };
+                Debugger.Log(1,"F4ST.Queue", $"Error=>{e.Message}");
+                throw;
+            }
         }
 
         protected override async Task ProcessSendMessage(QClassMessage request)
@@ -66,7 +80,20 @@ namespace F4ST.Queue.Receivers
                 CultureInfo.CurrentUICulture = cultureInfo;
             }
 
-            Globals.RunMethod(wr, method, request.Parameters, false);
+            var parameters = ProcessParameters(method, request.Parameters);
+            Globals.RunMethod(wr, method, parameters, false);
+        }
+
+        private object[] ProcessParameters(MethodInfo method, object[] parameters)
+        {
+            var res=new List<object>();
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var item = method.GetParameters()[i];
+                res.Add(Convert.ChangeType(parameters[i], item.ParameterType));
+            }
+
+            return res.ToArray();
         }
 
         public void Start()

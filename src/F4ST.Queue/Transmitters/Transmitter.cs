@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using EasyNetQ;
 using F4ST.Queue.QMessageModels;
 using F4ST.Queue.QMessageModels.RequestMessages;
@@ -18,7 +19,7 @@ namespace F4ST.Queue.Transmitters
         public async Task<QBaseResponse> Request(QSettingModel setting, QBaseRequest request)
         {
             CreateBus(setting);
-
+            Debugger.Break();
             return await _bus.RequestAsync<QBaseRequest, QBaseResponse>(request,
                 c => c.WithQueueName(setting.QueueName));
         }
