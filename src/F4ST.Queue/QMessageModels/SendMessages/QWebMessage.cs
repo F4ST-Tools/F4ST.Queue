@@ -5,6 +5,9 @@ namespace F4ST.Queue.QMessageModels.SendMessages
 {
     public class QWebMessage : QBaseMessage, IQWebMessage
     {
+        private string _arguments;
+        private string _queryStrings;
+
         /// <inheritdoc />
         public string TraceId { get; set; }
 
@@ -13,6 +16,8 @@ namespace F4ST.Queue.QMessageModels.SendMessages
 
         /// <inheritdoc />
         public string Domain { get; set; }
+
+        public string ContentType { get; set; }
 
         /// <inheritdoc />
         public string BasePath { get; set; }
@@ -35,10 +40,10 @@ namespace F4ST.Queue.QMessageModels.SendMessages
         public Dictionary<string, string[]> Headers { get; set; }
 
         /// <inheritdoc />
-        public IDictionary<string, object> Arguments { get; set; }
+        public string Arguments { get; set; }
 
         /// <inheritdoc />
-        public Dictionary<string, string[]> QueryStrings { get; set; }
+        public string QueryStrings { get; set; }
 
         /// <inheritdoc />
         public string Body { get; set; }
@@ -47,9 +52,7 @@ namespace F4ST.Queue.QMessageModels.SendMessages
         public string Lang { get; set; }
 
         /// <inheritdoc />
-        public bool IsAuthenticated { get; }//=> TokenInfo!=null;
+        public virtual bool IsAuthenticated { get; }
 
-        /// <inheritdoc />
-        //public UserTokenModel TokenInfo { get; set; }
     }
 }

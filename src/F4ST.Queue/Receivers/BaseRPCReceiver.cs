@@ -43,8 +43,8 @@ namespace F4ST.Queue.Receivers
             if (!string.IsNullOrWhiteSpace(request.Lang))
             {
                 var cultureInfo = new CultureInfo(request.Lang);
-                CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-                CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+                CultureInfo.CurrentCulture = cultureInfo;
+                CultureInfo.CurrentUICulture = cultureInfo;
             }
 
             var res = Globals.RunMethod(wr, method, request.Parameters, true);
@@ -62,8 +62,8 @@ namespace F4ST.Queue.Receivers
             if (!string.IsNullOrWhiteSpace(request.Lang))
             {
                 var cultureInfo = new CultureInfo(request.Lang);
-                CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-                CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+                CultureInfo.CurrentCulture = cultureInfo;
+                CultureInfo.CurrentUICulture = cultureInfo;
             }
 
             Globals.RunMethod(wr, method, request.Parameters, false);

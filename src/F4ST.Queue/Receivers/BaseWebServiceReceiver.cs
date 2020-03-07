@@ -138,11 +138,11 @@ namespace F4ST.Queue.Receivers
                             p = v.ConvertToType<string>(prm.ParameterType);
                         }
 
-                        if (p == null && request.QueryStrings.ContainsKey(prmName))
+                        /*if (p == null && request.QueryStrings.ContainsKey(prmName))
                         {
                             var v = request.QueryStrings[prmName];
                             p = v.ConvertToType<string>(prm.ParameterType);
-                        }
+                        }*/
 
                         if (p == null && (route?.Any() ?? false))
                         {
@@ -223,8 +223,8 @@ namespace F4ST.Queue.Receivers
                 if (!string.IsNullOrWhiteSpace(request.Lang))
                 {
                     var cultureInfo = new CultureInfo(request.Lang);
-                    CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-                    CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+                    CultureInfo.CurrentCulture = cultureInfo;
+                    CultureInfo.CurrentUICulture = cultureInfo;
                 }
 
                 var methodRes = Globals.RunMethod(wr, fm.Item3, fm.Item4?.ToArray(), true);
@@ -294,8 +294,8 @@ namespace F4ST.Queue.Receivers
                 if (!string.IsNullOrWhiteSpace(request.Lang))
                 {
                     var cultureInfo = new CultureInfo(request.Lang);
-                    CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-                    CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+                    CultureInfo.CurrentCulture = cultureInfo;
+                    CultureInfo.CurrentUICulture = cultureInfo;
                 }
 
                 await (Task<QWebResponse>)fm.Item3.Invoke(wr, parameters: fm.Item4?.ToArray());
