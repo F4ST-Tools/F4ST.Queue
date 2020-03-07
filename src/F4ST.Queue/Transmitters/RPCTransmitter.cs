@@ -1,11 +1,15 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
 using F4ST.Common.Containers;
+using F4ST.Common.Extensions;
 using F4ST.Common.Tools;
 using F4ST.Queue.QMessageModels;
 using F4ST.Queue.QMessageModels.RequestMessages;
 using F4ST.Queue.QMessageModels.SendMessages;
+using Newtonsoft.Json;
 
 namespace F4ST.Queue.Transmitters
 {
@@ -31,53 +35,63 @@ namespace F4ST.Queue.Transmitters
         {
             await base.BeforeRunMethod(targetMethod, args);
 
-            using (var transmitter = IoC.Resolve<ITransmitter>())
+            try
             {
-                if (targetMethod.ReturnType == typeof(void))
+                using (var transmitter = IoC.Resolve<ITransmitter>())
                 {
-                    await transmitter.Send(qSetting, new QClassMessage()
+                    if (targetMethod.ReturnType == typeof(void))
                     {
-                        Lang = CultureInfo.CurrentCulture.Name,
-                        MethodName = targetMethod.Name,
-                        Parameters = args
-                    });
+                        await transmitter.Send(qSetting, new QClassMessage()
+                        {
+                            Lang = CultureInfo.CurrentCulture.Name,
+                            MethodName = targetMethod.Name,
+                            Parameters = args
+                        });
+                    }
+                    else
+                    {
+                        var res = await transmitter.Request(qSetting, new QClassRequestMessage()
+                        {
+                            Lang = CultureInfo.CurrentCulture.Name,
+                            MethodName = targetMethod.Name,
+                            Parameters = args
+                        });
+                        Debugger.Break();
+
+                        if (res == null)
+                        {
+                            Result = null;
+                            return false;
+                        }
+
+                        if (!(res is QClassResponseMessage response))
+                        {
+                            Result = null;
+                            return false;
+                        }
+
+                        Result = ((string)response.Result).ToObject<string>();
+
+                        if (!IsAsyncMethod(targetMethod))
+                            return false;
+
+                        if (targetMethod.ReturnType == typeof(Task))
+                        {
+                            Result = GetTaskResult();
+                            return false;
+                        }
+
+                        var m = GetType().GetMethod("GetGenericResult");
+                        var g = m?.MakeGenericMethod(targetMethod.ReturnType.GenericTypeArguments[0]);
+                        Result = JsonConvert.DeserializeObject((string) Result, targetMethod.ReturnType.GenericTypeArguments[0]);
+                        Result = g?.Invoke(this, new[] {Result});
+                    }
                 }
-                else
-                {
-                    var res = await transmitter.Request(qSetting, new QClassRequestMessage()
-                    {
-                        Lang = CultureInfo.CurrentCulture.Name,
-                        MethodName = targetMethod.Name,
-                        Parameters = args
-                    });
-
-                    if (res == null)
-                    {
-                        Result = null;
-                        return false;
-                    }
-
-                    if (!(res is QClassResponseMessage response))
-                    {
-                        Result = null;
-                        return false;
-                    }
-
-                    Result = response.Result;
-
-                    if (!IsAsyncMethod(targetMethod))
-                        return false;
-
-                    if (targetMethod.ReturnType == typeof(Task))
-                    {
-                        Result = GetTaskResult();
-                        return false;
-                    }
-
-                    var m = GetType().GetMethod("GetGenericResult");
-                    var g = m?.MakeGenericMethod(targetMethod.ReturnType.GenericTypeArguments[0]);
-                    Result = g?.Invoke(this, new[] {Result});
-                }
+            }
+            catch (Exception e)
+            {
+                Debugger.Log(1,"F4St.Queue", $"Error=>{e.Message}");
+                throw;
             }
 
             return false;

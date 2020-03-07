@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="f4st.common" Version="1.0.24" />
+    <PackageReference Include="f4st.common" Version="1.0.26" />
   </ItemGroup>
 
   <ItemGroup>
