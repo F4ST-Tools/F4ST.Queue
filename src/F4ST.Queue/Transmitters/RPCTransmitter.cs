@@ -37,7 +37,7 @@ namespace F4ST.Queue.Transmitters
                 {
                     await transmitter.Send(qSetting, new QClassMessage()
                     {
-                        Lang = CultureInfo.DefaultThreadCurrentCulture.Name,
+                        Lang = CultureInfo.CurrentCulture.Name,
                         MethodName = targetMethod.Name,
                         Parameters = args
                     });
@@ -46,7 +46,7 @@ namespace F4ST.Queue.Transmitters
                 {
                     var res = await transmitter.Request(qSetting, new QClassRequestMessage()
                     {
-                        Lang = CultureInfo.DefaultThreadCurrentCulture.Name,
+                        Lang = CultureInfo.CurrentCulture.Name,
                         MethodName = targetMethod.Name,
                         Parameters = args
                     });

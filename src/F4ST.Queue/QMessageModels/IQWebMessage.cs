@@ -20,6 +20,11 @@ namespace F4ST.Queue.QMessageModels
         string Domain { get; set; }
 
         /// <summary>
+        /// Content Type
+        /// </summary>
+        string ContentType { get; set; }
+
+        /// <summary>
         /// آدرس اصلی سایت
         /// </summary>
         string BasePath { get; set; }
@@ -57,12 +62,12 @@ namespace F4ST.Queue.QMessageModels
         /// <summary>
         /// مقادیر ارسالی
         /// </summary>
-        IDictionary<string, object> Arguments { get; set; }
+        string Arguments { get; set; }
 
         /// <summary>
         /// لیست query string
         /// </summary>
-        Dictionary<string, string[]> QueryStrings { get; set; }
+        string QueryStrings { get; set; }
 
         /// <summary>
         /// مقادیر ارسالی در body [fromBody]
@@ -79,10 +84,6 @@ namespace F4ST.Queue.QMessageModels
         /// </summary>
         bool IsAuthenticated { get; }
 
-        /// <summary>
-        /// اطلاعات توکن ارسالی
-        /// </summary>
-        //UserTokenModel TokenInfo { get; set; }
 
     }
 }
