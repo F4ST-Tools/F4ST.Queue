@@ -6,6 +6,6 @@ namespace F4ST.Queue.Receivers
     public abstract class WebServiceReceiver
     {
         public QWebRequestMessage Request { get; set; }
-        public Dictionary<string, string> ResponseHeader = null;
+        public Dictionary<string, string[]> ResponseHeader = null;
     }
 }

@@ -12,7 +12,7 @@ namespace F4ST.Queue.QMessageModels.RequestMessages
         /// <summary>
         /// هدرهای پاسخ
         /// </summary>
-        public Dictionary<string, string> Headers { get; set; }
+        public Dictionary<string, string[]> Headers { get; set; }
 
         /// <summary>
         /// کد بازگشتی

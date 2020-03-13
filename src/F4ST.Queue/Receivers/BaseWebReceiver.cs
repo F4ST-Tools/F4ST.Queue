@@ -94,7 +94,7 @@ namespace F4ST.Queue.Receivers
                 var message = new HttpRequestMessage(httpMethod,
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
-                
+
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key.ToLower() == "host"))
@@ -155,14 +155,28 @@ namespace F4ST.Queue.Receivers
 
                 res.Status = (int)wRes.StatusCode;
 
-                res.Headers = new Dictionary<string, string>();
-                var headers = wRes.StatusCode == HttpStatusCode.OK
+                res.Headers = new Dictionary<string, string[]>();
+                /*var headers = wRes.StatusCode == HttpStatusCode.OK && wRes.Content.Headers?.Count()> wRes.Headers?.Count()
                     ? wRes.Content.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value))
-                    : wRes.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value));
+                    : wRes.Headers?.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value));*/
+
+                var headers =
+                    wRes.Content.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value))
+                        .ToList();
+                if (wRes.Headers != null)
+                {
+                    var keys = headers.Select(c => c.Key);
+                    var items = wRes.Headers.Where(c => !keys.Contains(c.Key));
+
+                    headers.AddRange(items);
+                }
 
                 foreach (var item in headers)
                 {
-                    res.Headers.Add(item.Key, new StringValues(item.Value.ToArray()));
+                    if (item.Key == "Transfer-Encoding")
+                        continue;
+
+                    res.Headers.Add(item.Key, item.Value.ToArray());
                 }
                 //var content = await wRes.Content.ReadAsStringAsync();
                 var contB = await wRes.Content.ReadAsByteArrayAsync();
