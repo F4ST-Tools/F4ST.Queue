@@ -94,8 +94,7 @@ namespace F4ST.Queue.Receivers
                 var message = new HttpRequestMessage(httpMethod,
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
-
-
+                
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key.ToLower() == "host"))
@@ -124,11 +123,27 @@ namespace F4ST.Queue.Receivers
                             continue;
                         }
 
+                        if (message.Headers.Contains(header.Key))
+                        {
+                            Debugger.Log(1, "F4ST.Queue",
+                                $"Duplicate header key, key={header.Key}, Value={string.Join(" , ", header.Value)}");
+                            message.Headers.Remove(header.Key);
+                        }
+
                         message.Headers.Add(header.Key, header.Value);
                     }
                 }
 
                 message.Headers.Add("MIP", request.IP);
+
+                var imp = Globals.GetImplementedInterfaceOf<IWebReceiverExt>();
+                if (imp?.Any() ?? false)
+                {
+                    foreach (var item in imp)
+                    {
+                        item.BeforeSend(message, request);
+                    }
+                }
 
                 var cancellationToken = new CancellationTokenSource();
                 cancellationToken.CancelAfter((settingModel.Timeout ?? 15 / 1000) * 1000);

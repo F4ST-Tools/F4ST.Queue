@@ -19,7 +19,6 @@ namespace F4ST.Queue.Transmitters
         public async Task<QBaseResponse> Request(QSettingModel setting, QBaseRequest request)
         {
             CreateBus(setting);
-            Debugger.Break();
             return await _bus.RequestAsync<QBaseRequest, QBaseResponse>(request,
                 c => c.WithQueueName(setting.QueueName));
         }
