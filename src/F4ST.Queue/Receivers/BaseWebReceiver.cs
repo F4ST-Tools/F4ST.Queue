@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -47,7 +48,7 @@ namespace F4ST.Queue.Receivers
 
         private readonly List<string> _blockedHeader = new List<string>()
         {
-            "content-length"
+            "content-length","Content-Length","content-type","Content-Type"
         };
 
         private async Task<QWebResponse> SendRequest(QWebRequestMessage request, QSettingModel settingModel)
@@ -97,18 +98,24 @@ namespace F4ST.Queue.Receivers
 
                 if (request.Headers?.Any() ?? false)
                 {
-                    if (request.Headers.Any(k => k.Key.ToLower() == "host"))
+                    if (request.Headers.Any(k => k.Key == "Host"))
                     {
-                        request.Headers.Remove("host");
-                        request.Headers.Add("host", new[] { request.Domain });
+                        request.Headers.Remove("Host");
+                        request.Headers.Add("Host", new[] { request.Domain });
                     }
 
-                    if (request.Headers.ContainsKey("content-type") &&
-                        request.Headers["content-type"][0].StartsWith("application/x-www-form-urlencoded"))
+                    if (request.Headers.ContainsKey("Content-Type") &&
+                        request.Headers["Content-Type"][0].StartsWith("application/x-www-form-urlencoded"))
                     {
                         //message.Content = new StringContent(request.Body);
                         var items = HttpUtility.ParseQueryString(request.Body);
                         message.Content = new FormUrlEncodedContent(items.ToDictionary<string, string>());
+                    }
+
+                    if (request.Headers.ContainsKey("Content-Type") &&
+                        request.Headers["Content-Type"][0].StartsWith("application/json"))
+                    {
+                        message.Content = new StringContent(request.Body, Encoding.UTF8, request.Headers["Content-Type"][0]);
                     }
 
                     foreach (var header in request.Headers)
@@ -118,12 +125,12 @@ namespace F4ST.Queue.Receivers
                             continue;
                         }
 
-                        if (header.Key == "content-type" && header.Value[0].StartsWith("application/x-www-form-urlencoded"))
+                        if (header.Key == "Content-Type" && header.Value[0].StartsWith("application/x-www-form-urlencoded"))
                         {
                             continue;
                         }
 
-                        if (message.Headers.Contains(header.Key))
+                        if (!string.IsNullOrWhiteSpace(message.Headers.FirstOrDefault(d => d.Key == header.Key).Key))
                         {
                             Debugger.Log(1, "F4ST.Queue",
                                 $"Duplicate header key, key={header.Key}, Value={string.Join(" , ", header.Value)}");
