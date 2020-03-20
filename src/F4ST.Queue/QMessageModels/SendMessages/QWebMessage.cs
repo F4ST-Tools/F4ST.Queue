@@ -46,7 +46,7 @@ namespace F4ST.Queue.QMessageModels.SendMessages
         public string QueryStrings { get; set; }
 
         /// <inheritdoc />
-        public string Body { get; set; }
+        public byte[] Body { get; set; }
 
         /// <inheritdoc />
         public string Lang { get; set; }

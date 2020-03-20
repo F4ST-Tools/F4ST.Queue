@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using F4ST.Common.Tools;
 using F4ST.Queue.Extensions;
 using F4ST.Queue.QMessageModels;
 using F4ST.Queue.QMessageModels.RequestMessages;
+using F4ST.Queue.Tools;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
@@ -96,6 +98,7 @@ namespace F4ST.Queue.Receivers
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
 
+                Debugger.Break();
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key == "Host"))
@@ -108,14 +111,35 @@ namespace F4ST.Queue.Receivers
                         request.Headers["Content-Type"][0].StartsWith("application/x-www-form-urlencoded"))
                     {
                         //message.Content = new StringContent(request.Body);
-                        var items = HttpUtility.ParseQueryString(request.Body);
+                        var items = HttpUtility.ParseQueryString(request.Body.FromBytes());
                         message.Content = new FormUrlEncodedContent(items.ToDictionary<string, string>());
+                    }
+
+                    if (request.Headers.ContainsKey("Content-Type") &&
+                        request.Headers["Content-Type"][0].StartsWith("multipart/form-data; boundary"))
+                    {
+                        //message.Content = new StringContent(request.Body);
+                        var parser = new HttpMultipartParser(request.Body);
+
+                        var cont = new MultipartFormDataContent();
+                        foreach (var item in parser.Parameters)
+                        {
+                            cont.Add(new StringContent(item.Value), item.Key);
+                        }
+                        message.Content = cont;
+
+
+                        /*foreach (var items in parser.Parameters)
+                        {
+                            cont.Add(new FormUrlEncodedContent(parser.Parameters));
+                        }*/
+
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
                         request.Headers["Content-Type"][0].StartsWith("application/json"))
                     {
-                        message.Content = new StringContent(request.Body, Encoding.UTF8, request.Headers["Content-Type"][0]);
+                        message.Content = new StringContent(request.Body.FromBytes(), Encoding.UTF8, request.Headers["Content-Type"][0]);
                     }
 
                     foreach (var header in request.Headers)
