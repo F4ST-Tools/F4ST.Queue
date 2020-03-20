@@ -72,7 +72,7 @@ namespace F4ST.Queue.QMessageModels
         /// <summary>
         /// مقادیر ارسالی در body [fromBody]
         /// </summary>
-        string Body { get; set; }
+        byte[] Body { get; set; }
 
         /// <summary>
         /// زبان درخواستی

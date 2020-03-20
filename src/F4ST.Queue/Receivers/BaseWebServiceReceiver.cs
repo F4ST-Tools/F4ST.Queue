@@ -128,7 +128,7 @@ namespace F4ST.Queue.Receivers
                         var qfb = prm.GetCustomAttribute<QFromBodyAttribute>();
                         if (qfb != null)
                         {
-                            p = JsonConvert.DeserializeObject(request.Body, prm.ParameterType);
+                            p = JsonConvert.DeserializeObject(request.Body.FromBytes(), prm.ParameterType);
                         }
 
                         var qfh = prm.GetCustomAttribute<QFromHeaderAttribute>();
