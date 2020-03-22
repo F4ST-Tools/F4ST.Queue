@@ -33,7 +33,8 @@ namespace F4ST.Queue.Receivers
             RequestClient = new HttpClient(new HttpClientHandler()
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                AllowAutoRedirect = false
+                AllowAutoRedirect = false,
+                UseCookies = false,
             });
         }
 
