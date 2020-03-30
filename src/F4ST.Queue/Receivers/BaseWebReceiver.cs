@@ -51,7 +51,7 @@ namespace F4ST.Queue.Receivers
 
         private readonly List<string> _blockedHeader = new List<string>()
         {
-            "content-length","Content-Length","content-type","Content-Type"
+            "content-length", "Content-Length", "content-type", "Content-Type"
         };
 
         private async Task<QWebResponse> SendRequest(QWebRequestMessage request, QSettingModel settingModel)
@@ -99,13 +99,13 @@ namespace F4ST.Queue.Receivers
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
 
-                Debugger.Break();
+                //Debugger.Break();
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key == "Host"))
                     {
                         request.Headers.Remove("Host");
-                        request.Headers.Add("Host", new[] { request.Domain });
+                        request.Headers.Add("Host", new[] {request.Domain});
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
@@ -113,7 +113,7 @@ namespace F4ST.Queue.Receivers
                     {
                         //message.Content = new StringContent(request.Body);
                         var items = HttpUtility.ParseQueryString(request.Body.FromBytes());
-                        message.Content = new FormUrlEncodedContent(items.ToDictionary<string, string>());
+                        message.Content = new FormUrlEncodedContent(items.ToNameValueCollection<string, string>());
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
@@ -127,6 +127,7 @@ namespace F4ST.Queue.Receivers
                         {
                             cont.Add(new StringContent(item.Value), item.Key);
                         }
+
                         message.Content = cont;
 
 
@@ -134,13 +135,13 @@ namespace F4ST.Queue.Receivers
                         {
                             cont.Add(new FormUrlEncodedContent(parser.Parameters));
                         }*/
-
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
                         request.Headers["Content-Type"][0].StartsWith("application/json"))
                     {
-                        message.Content = new StringContent(request.Body.FromBytes(), Encoding.UTF8, request.Headers["Content-Type"][0]);
+                        message.Content = new StringContent(request.Body.FromBytes(), Encoding.UTF8,
+                            request.Headers["Content-Type"][0]);
                     }
 
                     foreach (var header in request.Headers)
@@ -150,16 +151,20 @@ namespace F4ST.Queue.Receivers
                             continue;
                         }
 
-                        if (header.Key == "Content-Type" && header.Value[0].StartsWith("application/x-www-form-urlencoded"))
+                        if (header.Key == "Content-Type" &&
+                            header.Value[0].StartsWith("application/x-www-form-urlencoded"))
                         {
                             continue;
                         }
 
-                        if (!string.IsNullOrWhiteSpace(message.Headers.FirstOrDefault(d => d.Key == header.Key).Key))
+                        if (!string.IsNullOrWhiteSpace(
+                            message
+                                .Headers
+                                .FirstOrDefault(d =>
+                                    string.Equals(d.Key, header.Key, StringComparison.CurrentCultureIgnoreCase)).Key))
                         {
-                            Debugger.Log(1, "F4ST.Queue",
-                                $"Duplicate header key, key={header.Key}, Value={string.Join(" , ", header.Value)}");
                             message.Headers.Remove(header.Key);
+                            message.Headers.Remove(header.Key.ToLower());
                         }
 
                         message.Headers.Add(header.Key, header.Value);
@@ -185,7 +190,7 @@ namespace F4ST.Queue.Receivers
                 if (wRes == null)
                     return res;
 
-                res.Status = (int)wRes.StatusCode;
+                res.Status = (int) wRes.StatusCode;
 
                 res.Headers = new Dictionary<string, string[]>();
                 /*var headers = wRes.StatusCode == HttpStatusCode.OK && wRes.Content.Headers?.Count()> wRes.Headers?.Count()
@@ -210,11 +215,11 @@ namespace F4ST.Queue.Receivers
 
                     res.Headers.Add(item.Key, item.Value.ToArray());
                 }
+
                 //var content = await wRes.Content.ReadAsStringAsync();
                 var contB = await wRes.Content.ReadAsByteArrayAsync();
                 var content = Convert.ToBase64String(contB);
                 res.Response = content;
-
             }
             catch (Exception e)
             {
@@ -224,13 +229,12 @@ namespace F4ST.Queue.Receivers
                     settingModel,
                     e
                 };
-                res.Status = (int)HttpStatusCode.InternalServerError;
+                res.Status = (int) HttpStatusCode.InternalServerError;
 
                 if (Debugger.IsAttached)
                 {
                     res.Response = JsonConvert.SerializeObject(obj).Base64Encode();
                 }
-
             }
 
             return res;
@@ -238,10 +242,11 @@ namespace F4ST.Queue.Receivers
 
 
         protected override async Task ProcessSendMessage(QWebRequestMessage request)
-        { }
+        {
+        }
 
         public void Start()
-        { }
-
+        {
+        }
     }
 }
