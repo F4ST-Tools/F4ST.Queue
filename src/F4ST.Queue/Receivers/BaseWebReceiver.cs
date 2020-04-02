@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -16,6 +17,7 @@ using F4ST.Queue.Extensions;
 using F4ST.Queue.QMessageModels;
 using F4ST.Queue.QMessageModels.RequestMessages;
 using F4ST.Queue.Tools;
+using HttpMultipartParser;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
@@ -105,7 +107,7 @@ namespace F4ST.Queue.Receivers
                     if (request.Headers.Any(k => k.Key == "Host"))
                     {
                         request.Headers.Remove("Host");
-                        request.Headers.Add("Host", new[] {request.Domain});
+                        request.Headers.Add("Host", new[] { request.Domain });
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
@@ -119,22 +121,25 @@ namespace F4ST.Queue.Receivers
                     if (request.Headers.ContainsKey("Content-Type") &&
                         request.Headers["Content-Type"][0].StartsWith("multipart/form-data; boundary"))
                     {
-                        //message.Content = new StringContent(request.Body);
-                        var parser = new HttpMultipartParser(request.Body);
+                        var parser = MultipartFormDataParser.Parse(new MemoryStream(request.Body));
 
                         var cont = new MultipartFormDataContent();
-                        foreach (var item in parser.Parameters)
+                        foreach (var file in parser.Files ?? new List<FilePart>())
                         {
-                            cont.Add(new StringContent(item.Value), item.Key);
+                            var f = new StreamContent(file.Data);
+
+                            f.Headers.Add("Content-Disposition", $"form-data; name=\"{file.Name}\"; filename=\"{file.FileName}\"");
+                            f.Headers.Add("Content-Type", file.ContentType);
+                            
+                            cont.Add(f, file.Name, file.FileName);
+                        }
+
+                        foreach (var item in parser.Parameters ?? new List<ParameterPart>())
+                        {
+                            cont.Add(new StringContent(item.Data), item.Name);
                         }
 
                         message.Content = cont;
-
-
-                        /*foreach (var items in parser.Parameters)
-                        {
-                            cont.Add(new FormUrlEncodedContent(parser.Parameters));
-                        }*/
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
@@ -190,7 +195,7 @@ namespace F4ST.Queue.Receivers
                 if (wRes == null)
                     return res;
 
-                res.Status = (int) wRes.StatusCode;
+                res.Status = (int)wRes.StatusCode;
 
                 res.Headers = new Dictionary<string, string[]>();
                 /*var headers = wRes.StatusCode == HttpStatusCode.OK && wRes.Content.Headers?.Count()> wRes.Headers?.Count()
@@ -229,7 +234,7 @@ namespace F4ST.Queue.Receivers
                     settingModel,
                     e
                 };
-                res.Status = (int) HttpStatusCode.InternalServerError;
+                res.Status = (int)HttpStatusCode.InternalServerError;
 
                 if (Debugger.IsAttached)
                 {
