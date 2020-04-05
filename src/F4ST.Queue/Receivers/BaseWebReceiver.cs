@@ -130,8 +130,19 @@ namespace F4ST.Queue.Receivers
 
                             f.Headers.Add("Content-Disposition", $"form-data; name=\"{file.Name}\"; filename=\"{file.FileName}\"");
                             f.Headers.Add("Content-Type", file.ContentType);
-                            
-                            cont.Add(f, file.Name, file.FileName);
+
+                            if (!string.IsNullOrWhiteSpace(file.Name) && !string.IsNullOrWhiteSpace(file.FileName))
+                            {
+                                cont.Add(f, file.Name, file.FileName);
+                            }
+                            else if(!string.IsNullOrWhiteSpace(file.Name))
+                            {
+                                cont.Add(f, file.Name);
+                            }
+                            else
+                            {
+                                cont.Add(f);
+                            }
                         }
 
                         foreach (var item in parser.Parameters ?? new List<ParameterPart>())
@@ -198,9 +209,6 @@ namespace F4ST.Queue.Receivers
                 res.Status = (int)wRes.StatusCode;
 
                 res.Headers = new Dictionary<string, string[]>();
-                /*var headers = wRes.StatusCode == HttpStatusCode.OK && wRes.Content.Headers?.Count()> wRes.Headers?.Count()
-                    ? wRes.Content.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value))
-                    : wRes.Headers?.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value));*/
 
                 var headers =
                     wRes.Content.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value))
@@ -244,8 +252,7 @@ namespace F4ST.Queue.Receivers
 
             return res;
         }
-
-
+        
         protected override async Task ProcessSendMessage(QWebRequestMessage request)
         {
         }
