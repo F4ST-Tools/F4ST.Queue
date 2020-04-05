@@ -101,7 +101,7 @@ namespace F4ST.Queue.Receivers
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
 
-                Debugger.Break();
+                //Debugger.Break();
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key == "Host"))
