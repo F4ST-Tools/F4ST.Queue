@@ -21,17 +21,22 @@ namespace F4ST.Queue.Extensions
                 .First(s => s.Active && s.Name == name);
         }
 
-        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this NameValueCollection col)
+        public static IEnumerable<KeyValuePair<TKey, TValue>> ToNameValueCollection<TKey, TValue>(this NameValueCollection col)
         {
-            var dict = new Dictionary<TKey, TValue>();
+            var dict = new List<KeyValuePair<TKey, TValue>>();
             var keyConverter = TypeDescriptor.GetConverter(typeof(TKey));
             var valueConverter = TypeDescriptor.GetConverter(typeof(TValue));
 
             foreach (string name in col)
             {
-                TKey key = (TKey)keyConverter.ConvertFromString(name);
-                TValue value = (TValue)valueConverter.ConvertFromString(col[name]);
-                dict.Add(key, value);
+                var key = (TKey)keyConverter.ConvertFromString(name);
+
+                foreach (var v in col.GetValues(name) ?? new string[0])
+                {
+                    //TValue value = (TValue) valueConverter.ConvertFromString(col[name]);
+                    var value = (TValue)valueConverter.ConvertFromString(v);
+                    dict.Add(new KeyValuePair<TKey, TValue>(key, value));
+                }
             }
 
             return dict;

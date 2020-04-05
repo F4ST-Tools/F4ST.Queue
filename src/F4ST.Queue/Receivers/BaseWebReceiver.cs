@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -16,6 +17,7 @@ using F4ST.Queue.Extensions;
 using F4ST.Queue.QMessageModels;
 using F4ST.Queue.QMessageModels.RequestMessages;
 using F4ST.Queue.Tools;
+using HttpMultipartParser;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
@@ -51,7 +53,7 @@ namespace F4ST.Queue.Receivers
 
         private readonly List<string> _blockedHeader = new List<string>()
         {
-            "content-length","Content-Length","content-type","Content-Type"
+            "content-length", "Content-Length", "content-type", "Content-Type"
         };
 
         private async Task<QWebResponse> SendRequest(QWebRequestMessage request, QSettingModel settingModel)
@@ -99,7 +101,7 @@ namespace F4ST.Queue.Receivers
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
 
-                Debugger.Break();
+                //Debugger.Break();
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key == "Host"))
@@ -113,34 +115,49 @@ namespace F4ST.Queue.Receivers
                     {
                         //message.Content = new StringContent(request.Body);
                         var items = HttpUtility.ParseQueryString(request.Body.FromBytes());
-                        message.Content = new FormUrlEncodedContent(items.ToDictionary<string, string>());
+                        message.Content = new FormUrlEncodedContent(items.ToNameValueCollection<string, string>());
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
                         request.Headers["Content-Type"][0].StartsWith("multipart/form-data; boundary"))
                     {
-                        //message.Content = new StringContent(request.Body);
-                        var parser = new HttpMultipartParser(request.Body);
+                        var parser = MultipartFormDataParser.Parse(new MemoryStream(request.Body));
 
                         var cont = new MultipartFormDataContent();
-                        foreach (var item in parser.Parameters)
+                        foreach (var file in parser.Files ?? new List<FilePart>())
                         {
-                            cont.Add(new StringContent(item.Value), item.Key);
+                            var f = new StreamContent(file.Data);
+
+                            f.Headers.Add("Content-Disposition", $"form-data; name=\"{file.Name}\"; filename=\"{file.FileName}\"");
+                            f.Headers.Add("Content-Type", file.ContentType);
+
+                            if (!string.IsNullOrWhiteSpace(file.Name) && !string.IsNullOrWhiteSpace(file.FileName))
+                            {
+                                cont.Add(f, file.Name, file.FileName);
+                            }
+                            else if(!string.IsNullOrWhiteSpace(file.Name))
+                            {
+                                cont.Add(f, file.Name);
+                            }
+                            else
+                            {
+                                cont.Add(f);
+                            }
                         }
-                        message.Content = cont;
 
-
-                        /*foreach (var items in parser.Parameters)
+                        foreach (var item in parser.Parameters ?? new List<ParameterPart>())
                         {
-                            cont.Add(new FormUrlEncodedContent(parser.Parameters));
-                        }*/
+                            cont.Add(new StringContent(item.Data), item.Name);
+                        }
 
+                        message.Content = cont;
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
                         request.Headers["Content-Type"][0].StartsWith("application/json"))
                     {
-                        message.Content = new StringContent(request.Body.FromBytes(), Encoding.UTF8, request.Headers["Content-Type"][0]);
+                        message.Content = new StringContent(request.Body.FromBytes(), Encoding.UTF8,
+                            request.Headers["Content-Type"][0]);
                     }
 
                     foreach (var header in request.Headers)
@@ -150,16 +167,20 @@ namespace F4ST.Queue.Receivers
                             continue;
                         }
 
-                        if (header.Key == "Content-Type" && header.Value[0].StartsWith("application/x-www-form-urlencoded"))
+                        if (header.Key == "Content-Type" &&
+                            header.Value[0].StartsWith("application/x-www-form-urlencoded"))
                         {
                             continue;
                         }
 
-                        if (!string.IsNullOrWhiteSpace(message.Headers.FirstOrDefault(d => d.Key == header.Key).Key))
+                        if (!string.IsNullOrWhiteSpace(
+                            message
+                                .Headers
+                                .FirstOrDefault(d =>
+                                    string.Equals(d.Key, header.Key, StringComparison.CurrentCultureIgnoreCase)).Key))
                         {
-                            Debugger.Log(1, "F4ST.Queue",
-                                $"Duplicate header key, key={header.Key}, Value={string.Join(" , ", header.Value)}");
                             message.Headers.Remove(header.Key);
+                            message.Headers.Remove(header.Key.ToLower());
                         }
 
                         message.Headers.Add(header.Key, header.Value);
@@ -188,9 +209,6 @@ namespace F4ST.Queue.Receivers
                 res.Status = (int)wRes.StatusCode;
 
                 res.Headers = new Dictionary<string, string[]>();
-                /*var headers = wRes.StatusCode == HttpStatusCode.OK && wRes.Content.Headers?.Count()> wRes.Headers?.Count()
-                    ? wRes.Content.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value))
-                    : wRes.Headers?.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value));*/
 
                 var headers =
                     wRes.Content.Headers.Select(k => new KeyValuePair<string, IEnumerable<string>>(k.Key, k.Value))
@@ -210,11 +228,11 @@ namespace F4ST.Queue.Receivers
 
                     res.Headers.Add(item.Key, item.Value.ToArray());
                 }
+
                 //var content = await wRes.Content.ReadAsStringAsync();
                 var contB = await wRes.Content.ReadAsByteArrayAsync();
                 var content = Convert.ToBase64String(contB);
                 res.Response = content;
-
             }
             catch (Exception e)
             {
@@ -230,18 +248,17 @@ namespace F4ST.Queue.Receivers
                 {
                     res.Response = JsonConvert.SerializeObject(obj).Base64Encode();
                 }
-
             }
 
             return res;
         }
-
-
+        
         protected override async Task ProcessSendMessage(QWebRequestMessage request)
-        { }
+        {
+        }
 
         public void Start()
-        { }
-
+        {
+        }
     }
 }
