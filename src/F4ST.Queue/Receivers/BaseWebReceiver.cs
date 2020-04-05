@@ -101,13 +101,13 @@ namespace F4ST.Queue.Receivers
                     new Uri(new Uri(request.BaseUrl),
                         $"{request.Arguments}{request.QueryStrings}"));
 
-                //Debugger.Break();
+                Debugger.Break();
                 if (request.Headers?.Any() ?? false)
                 {
                     if (request.Headers.Any(k => k.Key == "Host"))
                     {
                         request.Headers.Remove("Host");
-                        request.Headers.Add("Host", new[] { request.Domain });
+                        request.Headers.Add("Host", new[] {request.Domain});
                     }
 
                     if (request.Headers.ContainsKey("Content-Type") &&
@@ -121,21 +121,24 @@ namespace F4ST.Queue.Receivers
                     if (request.Headers.ContainsKey("Content-Type") &&
                         request.Headers["Content-Type"][0].StartsWith("multipart/form-data; boundary"))
                     {
-                        var parser = MultipartFormDataParser.Parse(new MemoryStream(request.Body));
+                        var parser = MultipartFormDataParser.Parse(new MemoryStream(request.Body), Encoding.UTF8);
 
                         var cont = new MultipartFormDataContent();
                         foreach (var file in parser.Files ?? new List<FilePart>())
                         {
                             var f = new StreamContent(file.Data);
 
-                            f.Headers.Add("Content-Disposition", $"form-data; name=\"{file.Name}\"; filename=\"{file.FileName}\"");
+                            f.Headers.Add("Content-Disposition",
+                                new string(Encoding.UTF8
+                                    .GetBytes($"form-data; name=\"{file.Name}\"; filename=\"{file.FileName}\"")
+                                    .Select(b => (char) b).ToArray()));
                             f.Headers.Add("Content-Type", file.ContentType);
 
                             if (!string.IsNullOrWhiteSpace(file.Name) && !string.IsNullOrWhiteSpace(file.FileName))
                             {
                                 cont.Add(f, file.Name, file.FileName);
                             }
-                            else if(!string.IsNullOrWhiteSpace(file.Name))
+                            else if (!string.IsNullOrWhiteSpace(file.Name))
                             {
                                 cont.Add(f, file.Name);
                             }
@@ -206,7 +209,7 @@ namespace F4ST.Queue.Receivers
                 if (wRes == null)
                     return res;
 
-                res.Status = (int)wRes.StatusCode;
+                res.Status = (int) wRes.StatusCode;
 
                 res.Headers = new Dictionary<string, string[]>();
 
@@ -242,7 +245,7 @@ namespace F4ST.Queue.Receivers
                     settingModel,
                     e
                 };
-                res.Status = (int)HttpStatusCode.InternalServerError;
+                res.Status = (int) HttpStatusCode.InternalServerError;
 
                 if (Debugger.IsAttached)
                 {
@@ -252,7 +255,7 @@ namespace F4ST.Queue.Receivers
 
             return res;
         }
-        
+
         protected override async Task ProcessSendMessage(QWebRequestMessage request)
         {
         }
